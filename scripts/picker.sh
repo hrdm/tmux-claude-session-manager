@@ -19,18 +19,21 @@ emit_rows() {
     at=$(tmux show-options -qv -t "$s" @claude_state_at 2>/dev/null)
     path=$(tmux display-message -p -t "$s" '#{pane_current_path}' 2>/dev/null)
     case "$state" in
-      waiting) icon=$'\033[33m●\033[0m waiting' rank=0 ;; # yellow - needs input
-      idle)    icon=$'\033[32m●\033[0m idle   ' rank=1 ;; # green  - done, your turn
-      working) icon=$'\033[31m●\033[0m working' rank=3 ;; # red    - busy, leave it
-      *)       icon=$'\033[90m●\033[0m   ?    ' rank=2 ;; # grey   - unknown (no hook yet)
+    waiting) icon=$'\033[33m●\033[0m waiting' rank=0 ;; # yellow - needs input
+    idle) icon=$'\033[32m●\033[0m idle   ' rank=1 ;;    # green  - done, your turn
+    working) icon=$'\033[31m●\033[0m working' rank=3 ;; # red    - busy, leave it
+    *) icon=$'\033[90m●\033[0m   ?    ' rank=2 ;;       # grey   - unknown (no hook yet)
     esac
-    if [ -n "$at" ]; then ago="$(( (now - at) / 60 ))m"; else ago='-'; fi
+    if [ -n "$at" ]; then ago="$(((now - at) / 60))m"; else ago='-'; fi
     # rank \t session \t icon \t path \t age   (rank/session hidden via --with-nth)
     printf '%s\t%s\t%s\t%s\t%s\n' "$rank" "$s" "$icon" "${path/#$HOME/~}" "$ago"
   done | sort -n # attention-needed (waiting, idle) float to the top
 }
 
-[ "${1:-}" = '--list' ] && { emit_rows; exit 0; }
+[ "${1:-}" = '--list' ] && {
+  emit_rows
+  exit 0
+}
 
 if ! command -v fzf >/dev/null 2>&1; then
   tmux display-message "tmux-claude-session-manager: fzf is required for the picker"
@@ -46,12 +49,12 @@ sel=$(emit_rows | fzf --ansi --delimiter='\t' --with-nth=3,4,5 \
 [ -z "$sel" ] && exit 0
 target=$(printf '%s' "$sel" | cut -f2)
 
-# Move the underlying parent client to the session's origin window (best-effort),
-# then resume the session in THIS popup over it. Falls back to resuming over the
-# current window when origin/parent are unknown.
+# Move the underlying parent client to the session's origin window (best-effort).
 origin=$(tmux show-options -qv -t "$target" @claude_origin 2>/dev/null)
 parent=$(tmux show-options -gqv @claude_parent 2>/dev/null)
-[ -n "$origin" ] && [ -n "$parent" ] && \
+[ -n "$origin" ] && [ -n "$parent" ] &&
   tmux switch-client -c "$parent" -t "$origin" 2>/dev/null
 
-tmux attach-session -t "$target"
+# Signal list.sh to open the styled popup after this picker popup closes.
+# list.sh is blocking on display-popup and will read this option when we exit.
+tmux set-option -g @claude_pending_popup "$target"
