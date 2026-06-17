@@ -151,7 +151,7 @@ The state machine:
 Set any of these before the plugin loads (defaults shown):
 
 ```tmux
-set -g @claude_launch_key     'y'        # prefix key: launch/open for current dir
+set -g @claude_launch_key     't'        # prefix key: launch/open for current dir
 set -g @claude_list_key       'u'        # prefix key: open the picker
 set -g @claude_command        'claude'   # command run in new sessions
 set -g @claude_session_prefix 'claude-'  # tmux session name prefix
