@@ -10,9 +10,16 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 tmux set-option -g @claude_parent "${1:-}"
 tmux set-option -gu @claude_pending_popup 2>/dev/null
 
+title_bg="$(get_tmux_option @claude_popup_title_bg '#ff787d')"
+title_fg="$(get_tmux_option @claude_popup_title_fg '#ffffff')"
 w="$(get_tmux_option @claude_popup_width '90%')"
 h="$(get_tmux_option @claude_popup_height '90%')"
-tmux display-popup -w "$w" -h "$h" -E "$DIR/picker.sh"
+tmux display-popup \
+  -T "#[align=centre,bg=${title_bg},fg=${title_fg}] ✳ Claude Session Manager " \
+  -w "$w" -h "$h" \
+  -s 'bg=default' \
+  -S "fg=${title_bg}" \
+  -E "$DIR/picker.sh"
 
 # picker.sh sets @claude_pending_popup when a session is selected.
 # Open it here in a styled popup, matching the launch.sh appearance.
