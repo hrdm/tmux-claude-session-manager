@@ -11,6 +11,12 @@ window="${2:-}"
 
 prefix="$(get_tmux_option @claude_session_prefix 'claude-')"
 cmd="$(get_tmux_option @claude_command 'claude')"
+# CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN keeps the full styled TUI (borders, logo)
+# but renders it on the main screen buffer instead of the alternate screen, so
+# output flows into tmux scrollback and prefix-[ copy-mode can scroll through it.
+# Set @claude_scrollback 'off' in tmux.conf to disable this behaviour.
+scrollback="$(get_tmux_option @claude_scrollback 'on')"
+[ "$scrollback" = "on" ] && cmd="CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 $cmd"
 w="$(get_tmux_option @claude_popup_width '90%')"
 h="$(get_tmux_option @claude_popup_height '85%')"
 title_bg="$(get_tmux_option @claude_popup_title_bg '#ff787d')"
